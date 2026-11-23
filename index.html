@@ -147,7 +147,7 @@ footer { font-size: 0.72rem; color: var(--muted); text-align: center; }
       <li>You get 6 guesses at the monthly change in total nonfarm payrolls, in thousands of jobs.</li>
       <li>Within ±5K wins. After each guess you see higher or lower, and how close you were: <b>very close</b> is within 50K, <b>close</b> is within 150K.</li>
       <li>Every miss reveals another figure from the same month.</li>
-      <li>Daily puzzles change at local midnight. Practice draws a random month from 2000 through 2026.</li>
+      <li>Daily puzzles change at local midnight. Practice draws a random month from 2000 on, including the newest reports.</li>
     </ul>
   </details>
   <footer>Source: U.S. Bureau of Labor Statistics, seasonally adjusted series CES0000000001, LNS14000000, CUSR0000SA0, LNS11300000, CES0500000008, CES3000000001. Figures are current revised estimates, not the first print.</footer>
@@ -176,7 +176,9 @@ const HINTS = [
 
 // Fixed seeded permutation so each day maps to a distinct month.
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const PERM = (() => { const p = DATA.map((_, i) => i), rnd = mulberry(20261123); for (let i = p.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; } return p; })();
+// Daily puzzles draw from a frozen pool (Jan 2000-Oct 2026) so adding new months never reshuffles past or future days.
+const DAILY_POOL = 322;
+const PERM = (() => { const p = Array.from({ length: DAILY_POOL }, (_, i) => i), rnd = mulberry(20261123); for (let i = p.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; } return p; })();
 function dayNumber() { const n = new Date(); return Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - EPOCH) / 86400000); }
 
 const store = {

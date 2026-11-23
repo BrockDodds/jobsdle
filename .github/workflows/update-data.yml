@@ -1,0 +1,38 @@
+name: Update BLS data
+
+# Jobs reports come out at 8:30 a.m. ET, usually on the first Friday of the month,
+# but the date moves. Checking every day catches new months and revisions;
+# the run commits only when the data changed.
+on:
+  schedule:
+    - cron: "0 15 * * *"   # 15:00 UTC = 10 or 11 a.m. ET
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch BLS data and rebuild index.html
+        env:
+          BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+        run: python3 update_data.py
+
+      - name: Commit and publish if anything changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update BLS data $(date -u +%Y-%m-%d)"
+          git push
+          gh api -X POST "repos/${{ github.repository }}/pages/builds"
